@@ -28,7 +28,15 @@ public class PlantaController {
      */
     private String getCurrentUserEmail() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        return authentication.getName(); // Devuelve el email (gracias a tu arreglo en JwtService)
+        
+        // Verificamos si el 'principal' (el usuario) es nuestra entidad UsuarioEntity
+        if (authentication.getPrincipal() instanceof com.grupo8.plantme_api.model.UsuarioEntity) {
+            // Hacemos casting y sacamos el email directamente
+            return ((com.grupo8.plantme_api.model.UsuarioEntity) authentication.getPrincipal()).getEmail();
+        }
+        
+        // Fallback por si acaso
+        return authentication.getName();
     }
 
     // --- 1. CREAR UNA PLANTA (POST) ---
