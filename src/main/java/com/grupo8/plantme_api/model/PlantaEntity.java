@@ -27,7 +27,7 @@ public class PlantaEntity {
     // En lugar de guardar el texto, guardamos el ID de la especie
     @ManyToOne 
     @JoinColumn(name = "especie_id", nullable = false)
-    private EspeciesEntity especie; 
+    private EspecieEntity especie; 
 
     // --- RELACIÓN CON USUARIO ---
     @ManyToOne(fetch = FetchType.LAZY)

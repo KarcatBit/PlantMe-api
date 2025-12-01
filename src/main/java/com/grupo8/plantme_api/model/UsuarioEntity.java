@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import lombok.NoArgsConstructor;
 import java.util.Collection;
@@ -50,8 +51,9 @@ public class UsuarioEntity implements UserDetails { // Implementa UserDetails pa
      */
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        // Podrías devolver List.of(new SimpleGrantedAuthority("ROLE_USER")); 
-        return List.of(); 
+        // Por simplicidad, casi siempre se asigna un rol por defecto.
+        // Asignaremos el rol básico de "USER".
+        return List.of(new SimpleGrantedAuthority("ROLE_USER"));
     }
 
     // Estos métodos simplemente indican que la cuenta está activa. 

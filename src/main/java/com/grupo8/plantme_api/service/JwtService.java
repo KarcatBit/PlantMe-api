@@ -41,12 +41,14 @@ public class JwtService {
             Map<String, Object> extraClaims,
             UserDetails userDetails
     ) {
+
+        String emailReal = ((com.grupo8.plantme_api.model.UsuarioEntity) userDetails).getEmail();
+
         return Jwts
                 .builder()
                 .setClaims(extraClaims)
-                .setSubject(userDetails.getUsername()) // El identificador (email)
-                .setIssuedAt(new Date(System.currentTimeMillis())) // Fecha de creación
-                // 3. Usa la expiración de 10 años para la sesión persistente
+                .setSubject(emailReal) // <--- ¡AQUÍ ESTÁ EL CAMBIO! Usamos el email.
+                .setIssuedAt(new Date(System.currentTimeMillis())) 
                 .setExpiration(new Date(System.currentTimeMillis() + EXPIRATION_TIME)) 
                 .signWith(getSignInKey(), SignatureAlgorithm.HS256)
                 .compact();
@@ -70,9 +72,35 @@ public class JwtService {
     
     // Método completo para la validación del token (verifica firma y expiración)
     public boolean isTokenValid(String token, UserDetails userDetails) {
-        final String username = extractUsername(token);
-        return (username.equals(userDetails.getUsername()) && !isTokenExpired(token));
+    // 1. Sacamos el email del token
+    final String emailDelToken = extractUsername(token);
+    
+    // 2. Sacamos el email del usuario de la BD (haciendo casting seguro)
+    String emailDelUsuarioBd = "";
+    if (userDetails instanceof com.grupo8.plantme_api.model.UsuarioEntity) {
+        emailDelUsuarioBd = ((com.grupo8.plantme_api.model.UsuarioEntity) userDetails).getEmail();
+    } else {
+        emailDelUsuarioBd = userDetails.getUsername();
     }
+
+    // --- DEBUG: IMPRIMIR EN CONSOLA PARA VER QUÉ PASA ---
+    System.out.println("🔍 VALIDANDO TOKEN:");
+    System.out.println("   Token dice (Email): " + emailDelToken);
+    System.out.println("   Base de Datos dice (Email): " + emailDelUsuarioBd);
+    System.out.println("   Base de Datos dice (Username): " + userDetails.getUsername());
+    // ----------------------------------------------------
+
+    // 3. Comparamos EMAIL con EMAIL
+    boolean esValido = emailDelToken.equals(emailDelUsuarioBd) && !isTokenExpired(token);
+    
+    if (!esValido) {
+        System.out.println("❌ TOKEN INVÁLIDO: Los emails no coinciden o expiró.");
+    } else {
+        System.out.println("✅ TOKEN VÁLIDO. Acceso concedido.");
+    }
+
+    return esValido;
+}
 
     private boolean isTokenExpired(String token) {
         return extractExpiration(token).before(new Date());
