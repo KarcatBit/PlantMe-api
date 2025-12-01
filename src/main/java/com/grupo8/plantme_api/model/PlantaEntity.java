@@ -2,6 +2,7 @@ package com.grupo8.plantme_api.model;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import java.time.LocalDateTime;
 import lombok.NoArgsConstructor;
@@ -11,6 +12,8 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Data
+@Builder
+
 public class PlantaEntity {
 
     @Id
@@ -18,24 +21,23 @@ public class PlantaEntity {
     private Long id;
 
     @Column(nullable = false)
-    private String nombre; 
+    private String nombre; // Ej: "Mi Cactus Favorito"
 
-    private String tipo; 
+    // --- RELACIÓN CON ESPECIE ---
+    // En lugar de guardar el texto, guardamos el ID de la especie
+    @ManyToOne 
+    @JoinColumn(name = "especie_id", nullable = false)
+    private EspeciesEntity especie; 
+
+    // --- RELACIÓN CON USUARIO ---
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "usuario_id", nullable = false)
+    private UsuarioEntity usuario;
+
+    // --- FECHAS DE RIEGO ---
+    @Column(nullable = false)
+    private LocalDateTime ultimoRiego; // Cuándo la regaste la última vez
 
     @Column(nullable = false)
-    private Integer frecuenciaDias; 
-
-
-    @Column(nullable = false)
-    private LocalDateTime fechaUltimoRegado; 
-
-    // --- Relación: N Plantas pertenecen a 1 Usuario ---
-    
-    // Esta anotación define la relación de muchos a uno (ManyToOne)
-    // El 'fetch = FetchType.LAZY' significa que el usuario solo se carga si es necesario.
-    @ManyToOne(fetch = FetchType.LAZY) 
-    // Crea la columna 'usuario_id' en la tabla de plantas
-    @JoinColumn(name = "usuario_id", nullable = false) 
-    private UsuarioEntity usuario; 
-    
+    private LocalDateTime siguienteRiego; // Backend calculará esto automáticamente
 }
