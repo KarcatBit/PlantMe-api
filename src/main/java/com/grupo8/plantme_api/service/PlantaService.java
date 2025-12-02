@@ -145,4 +145,24 @@ public class PlantaService {
         return plantaRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Planta no encontrada"));
     }
+
+    // --- 5. ELIMINAR PLANTA ---
+    @Transactional
+    public void eliminarPlanta(Long plantaId, String tokenUser) {
+        PlantaEntity planta = plantaRepository.findById(plantaId)
+                .orElseThrow(() -> new IllegalArgumentException("Planta no encontrada con ID: " + plantaId));
+
+        // VALIDACIÓN DE SEGURIDAD ROBUSTA
+        // Comparamos si el token coincide con el Email O con el Username del dueño
+        boolean coincideEmail = planta.getUsuario().getEmail().equalsIgnoreCase(tokenUser);
+        boolean coincideUser = planta.getUsuario().getUsername().equalsIgnoreCase(tokenUser);
+
+        if (!coincideEmail && !coincideUser) {
+            System.out.println("❌ SEGURIDAD ELIMINAR: Token (" + tokenUser + ") no coincide con dueño (" + planta.getUsuario().getEmail() + ")");
+            throw new SecurityException("Acceso denegado. No puedes eliminar esta planta.");
+        }
+
+        // Si la seguridad pasa, procedemos a eliminar
+        plantaRepository.delete(planta);
+    }
 }

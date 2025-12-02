@@ -87,4 +87,20 @@ public class PlantaController {
         PlantaResponseDTO plantaActualizada = plantaService.actualizarPlanta(id, request, userEmail);
         return ResponseEntity.ok(plantaActualizada);
     }
+    // 5. NUEVO ENDPOINT: ELIMINAR PLANTA (DELETE)
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> eliminarPlanta(
+            @PathVariable Long id,
+            Authentication authentication
+    ) {
+        String tokenUser = authentication.getName();
+        try {
+            plantaService.eliminarPlanta(id, tokenUser);
+            return ResponseEntity.noContent().build(); // HTTP 204 No Content
+        } catch (SecurityException e) {
+            return new ResponseEntity<>(HttpStatus.FORBIDDEN); // 403 Forbidden
+        } catch (IllegalArgumentException e) {
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND); // 404 Not Found
+        }
+    }
 }
