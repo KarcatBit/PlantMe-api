@@ -76,4 +76,15 @@ public class PlantaController {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND); // Planta no existe
         }
     }
+    // 4. NUEVO ENDPOINT: ACTUALIZAR PLANTA COMPLETA (PUT)
+    @PutMapping("/{id}")
+    public ResponseEntity<PlantaResponseDTO> actualizarPlanta(
+            @PathVariable Long id,
+            @RequestBody PlantaRequestDTO request,
+            Authentication authentication
+    ) {
+        String userEmail = authentication.getName();
+        PlantaResponseDTO plantaActualizada = plantaService.actualizarPlanta(id, request, userEmail);
+        return ResponseEntity.ok(plantaActualizada);
+    }
 }

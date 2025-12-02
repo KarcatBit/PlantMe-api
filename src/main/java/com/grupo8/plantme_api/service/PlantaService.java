@@ -12,7 +12,7 @@ import com.grupo8.plantme_api.repository.UsuarioRepository;
 
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
-
+import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors; // Para mapear listas
@@ -107,8 +107,43 @@ public class PlantaService {
         // 3. Guardar el cambio y devolver el DTO actualizado
         PlantaEntity plantaActualizada = plantaRepository.save(planta);
         return toResponseDTO(plantaActualizada);
+    }       
+    @Transactional
+    public PlantaResponseDTO actualizarPlanta(Long plantaId, PlantaRequestDTO request, String userEmail) {
+        PlantaEntity planta = plantaRepository.findById(plantaId)
+                .orElseThrow(() -> new IllegalArgumentException("Planta no encontrada con ID: " + plantaId));
+
+        // --- DEPURACIÓN: Comprobar qué emails se están comparando ---
+        // (Puedes borrar estas líneas después de que funcione)
+        System.out.println("Planta Owner Email (DB): " + planta.getUsuario().getEmail());
+        System.out.println("Authenticated User Email (Token): " + userEmail);
+
+        // 1. Verificar Seguridad: La planta debe pertenecer al usuario logueado
+        // CORRECCIÓN: Usar trim() para eliminar espacios y equalsIgnoreCase() para ignorar mayúsculas/minúsculas
+        if (!planta.getUsuario().getEmail().trim().equalsIgnoreCase(userEmail.trim())) {
+            throw new SecurityException("Acceso denegado. Esta planta no pertenece al usuario.");
+        }
+        
+        // 2. Actualizar Especie (si cambió)
+        EspecieEntity nuevaEspecie = especieRepository.findByNombre(request.getSpeciesKey())
+                .orElseThrow(() -> new IllegalArgumentException("Especie no encontrada: " + request.getSpeciesKey()));
+        
+        // 3. Actualizar campos
+        planta.setNombre(request.getNombre());
+        planta.setEspecie(nuevaEspecie);
+        planta.setUltimoRiego(request.getUltimoRiego()); // El cliente envía la fecha de último riego modificada
+        
+        // 4. Recalcular el siguiente riego (basado en la nueva especie y el nuevo último riego)
+        // Nota: El cliente (app) debería enviar el último riego en formato LocalDateTime.
+        LocalDateTime siguienteRiego = request.getUltimoRiego()
+                .plusDays(nuevaEspecie.getFrecuenciaRiegoDias());
+        planta.setSiguienteRiego(siguienteRiego);
+
+        // 5. Guardar el cambio y devolver el DTO actualizado
+        PlantaEntity plantaActualizada = plantaRepository.save(planta);
+        return toResponseDTO(plantaActualizada);
     }
-    
+
     // --- 4. OBTENER PLANTA POR ID (para el regarPlanta) ---
     public PlantaEntity obtenerPlantaPorId(Long id) {
         return plantaRepository.findById(id)
