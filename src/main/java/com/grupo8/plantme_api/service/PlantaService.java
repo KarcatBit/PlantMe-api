@@ -10,12 +10,14 @@ import com.grupo8.plantme_api.repository.EspecieRepository; // Nueva Importació
 import com.grupo8.plantme_api.repository.PlantaRepository;
 import com.grupo8.plantme_api.repository.UsuarioRepository;
 
+import org.apache.el.stream.Optional;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors; // Para mapear listas
+
 
 @Service
 public class PlantaService {
@@ -108,41 +110,35 @@ public class PlantaService {
         PlantaEntity plantaActualizada = plantaRepository.save(planta);
         return toResponseDTO(plantaActualizada);
     }       
+    // --- 4. ACTUALIZAR PLANTA (EDITAR) ---
     @Transactional
-    public PlantaResponseDTO actualizarPlanta(Long plantaId, PlantaRequestDTO request, String userEmail) {
+    public PlantaResponseDTO actualizarPlanta(Long plantaId, PlantaRequestDTO request, String tokenUser) {
         PlantaEntity planta = plantaRepository.findById(plantaId)
-                .orElseThrow(() -> new IllegalArgumentException("Planta no encontrada con ID: " + plantaId));
+                .orElseThrow(() -> new IllegalArgumentException("Planta no encontrada"));
 
-        // --- DEPURACIÓN: Comprobar qué emails se están comparando ---
-        // (Puedes borrar estas líneas después de que funcione)
-        System.out.println("Planta Owner Email (DB): " + planta.getUsuario().getEmail());
-        System.out.println("Authenticated User Email (Token): " + userEmail);
+        // VALIDACIÓN DE SEGURIDAD ROBUSTA (Igual que en regar)
+        boolean coincideEmail = planta.getUsuario().getEmail().equalsIgnoreCase(tokenUser);
+        boolean coincideUser = planta.getUsuario().getUsername().equalsIgnoreCase(tokenUser);
 
-        // 1. Verificar Seguridad: La planta debe pertenecer al usuario logueado
-        // CORRECCIÓN: Usar trim() para eliminar espacios y equalsIgnoreCase() para ignorar mayúsculas/minúsculas
-        if (!planta.getUsuario().getEmail().trim().equalsIgnoreCase(userEmail.trim())) {
-            throw new SecurityException("Acceso denegado. Esta planta no pertenece al usuario.");
+        if (!coincideEmail && !coincideUser) {
+            System.out.println("❌ SEGURIDAD EDITAR: Token (" + tokenUser + ") no coincide con dueño (" + planta.getUsuario().getEmail() + ")");
+            throw new SecurityException("Acceso denegado. No es tu planta.");
         }
-        
-        // 2. Actualizar Especie (si cambió)
+
+        // Actualizar datos
         EspecieEntity nuevaEspecie = especieRepository.findByNombre(request.getSpeciesKey())
-                .orElseThrow(() -> new IllegalArgumentException("Especie no encontrada: " + request.getSpeciesKey()));
-        
-        // 3. Actualizar campos
+                .orElseThrow(() -> new IllegalArgumentException("Especie desconocida"));
+
         planta.setNombre(request.getNombre());
         planta.setEspecie(nuevaEspecie);
-        planta.setUltimoRiego(request.getUltimoRiego()); // El cliente envía la fecha de último riego modificada
-        
-        // 4. Recalcular el siguiente riego (basado en la nueva especie y el nuevo último riego)
-        // Nota: El cliente (app) debería enviar el último riego en formato LocalDateTime.
-        LocalDateTime siguienteRiego = request.getUltimoRiego()
-                .plusDays(nuevaEspecie.getFrecuenciaRiegoDias());
-        planta.setSiguienteRiego(siguienteRiego);
+        planta.setUltimoRiego(request.getUltimoRiego());
 
-        // 5. Guardar el cambio y devolver el DTO actualizado
-        PlantaEntity plantaActualizada = plantaRepository.save(planta);
-        return toResponseDTO(plantaActualizada);
+        // Recalcular
+        planta.setSiguienteRiego(request.getUltimoRiego().plusDays(nuevaEspecie.getFrecuenciaRiegoDias()));
+
+        return toResponseDTO(plantaRepository.save(planta));
     }
+    
 
     // --- 4. OBTENER PLANTA POR ID (para el regarPlanta) ---
     public PlantaEntity obtenerPlantaPorId(Long id) {
