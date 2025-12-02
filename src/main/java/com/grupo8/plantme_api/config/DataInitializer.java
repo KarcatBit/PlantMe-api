@@ -22,7 +22,7 @@ public class DataInitializer implements CommandLineRunner {
             
             // Ajusta estos días según tu lógica de Android (SpeciesDefault)
             crearEspecie("cactus", 30);     
-            crearEspecie("photos", 7);
+            crearEspecie("pothos", 7);
             crearEspecie("aloe", 14);
             crearEspecie("sansevieria", 18);
             crearEspecie("suculenta", 21);
