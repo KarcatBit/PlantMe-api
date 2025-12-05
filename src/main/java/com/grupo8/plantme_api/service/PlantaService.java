@@ -10,11 +10,17 @@ import com.grupo8.plantme_api.repository.EspecieRepository; // Nueva Importació
 import com.grupo8.plantme_api.repository.PlantaRepository;
 import com.grupo8.plantme_api.repository.UsuarioRepository;
 
+import jakarta.transaction.Transactional;
+
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.stereotype.Service;
+
+
 import org.apache.el.stream.Optional;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.stream.Collectors; // Para mapear listas
 
@@ -102,7 +108,7 @@ public class PlantaService {
         Integer frecuenciaDias = planta.getEspecie().getFrecuenciaRiegoDias();
         
         // 2. Actualizar último riego a HOY y calcular el nuevo siguiente riego
-        LocalDateTime ahora = LocalDateTime.now();
+        LocalDateTime ahora = LocalDateTime.now(ZoneId.of("UTC"));
         planta.setUltimoRiego(ahora);
         planta.setSiguienteRiego(ahora.plusDays(frecuenciaDias));
         
